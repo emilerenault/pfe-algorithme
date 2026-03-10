@@ -1,0 +1,26 @@
+html,
+body {
+	margin: 0;
+	padding: 0;
+	width: 100%;
+	min-height: 100%;
+}
+
+body {
+	position: relative;
+	background: transparent;
+	overflow-x: hidden;
+}
+
+canvas {
+	position: fixed;
+	inset: 0;
+	width: 100vw;
+	height: 100vh;
+	box-sizing: border-box;
+	display: block;
+}
+
+.scroll-space {
+	height: 400vh;
+}
