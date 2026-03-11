@@ -9,54 +9,24 @@ import Olon, { Data } from "https://cdn.jsdelivr.net/npm/olon@0.0.0/src/Olon.js"
 import { random, floor, min } from "./tools.js"
 
 const MAX_AMOUNT = 100000
-const MIN_AGE = 1.01
-const MAX_AGE = 2.15
+const MIN_AGE = 3.5
+const MAX_AGE = 7.0
 
 const PRESETS = [
 	{
-		name: "Brume lente cinematique",
-		birthRate: 0.22,
-		clearAlpha: 0.06,
+		name: "Flux vers le nuage",
+		birthRate: 0.50,
+		clearAlpha: 0.07,
 		blendMode: "normal",
-		noiseScale: 5.0,
-		noiseSpeed: 0.2,
-		spawnScale: 0.52,
-		forceStrength: 1.1,
-		velocityDamping: 0.988,
-		velocityGain: 1.5,
-		pointScale: 1.7,
-		tint: [0.82, 0.91, 1.0],
-		alpha: 0.22,
-	},
-	{
-		name: "Flux energetique nerveux",
-		birthRate: 0.85,
-		clearAlpha: 0.3,
-		blendMode: "normal",
-		noiseScale: 12.0,
-		noiseSpeed: 0.9,
-		spawnScale: 0.82,
-		forceStrength: 4.8,
-		velocityDamping: 0.93,
-		velocityGain: 4.4,
-		pointScale: 1.1,
-		tint: [1.0, 0.8, 0.45],
-		alpha: 0.42,
-	},
-	{
-		name: "Nebuleuse lumineuse additive",
-		birthRate: 0.55,
-		clearAlpha: 0.11,
-		blendMode: "additive",
-		noiseScale: 7.5,
-		noiseSpeed: 0.35,
-		spawnScale: 0.68,
-		forceStrength: 2.6,
-		velocityDamping: 0.975,
-		velocityGain: 2.8,
-		pointScale: 2.4,
-		tint: [0.5, 0.85, 1.0],
-		alpha: 0.38,
+		noiseScale: 6.0,
+		noiseSpeed: 0.25,
+		spawnScale: 0.60,
+		forceStrength: 1.5,
+		velocityDamping: 0.982,
+		velocityGain: 1.8,
+		pointScale: 1.8,
+		tint: [0.85, 0.93, 1.0],
+		alpha: 0.32,
 	},
 ]
 
@@ -198,8 +168,10 @@ ol.render(() => {
 		applyPreset(DEFAULT_PRESET)
 	}
 
+	// 10 % des particules actives dès le départ → nuage initial visible
+	const scrollTarget = Math.floor(MAX_AMOUNT * Math.max(0.10, scrollProgress))
 	const nextAmount = floor(bornAmount + activePreset.birthRate * 1000)
-	bornAmount = min(MAX_AMOUNT, nextAmount)
+	bornAmount = Math.max(bornAmount, min(scrollTarget, nextAmount))
 
 	ol.clearColor(0, 0, 0, activePreset.clearAlpha)
 	ol.clearDepth()

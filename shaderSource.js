@@ -29,88 +29,68 @@ export const UPDATE_VERT = `
 	${Shox.snoise3D}
 	${Shox.hash}
 
-	const float PI = 3.14159265359;
-
-	vec2 linePoint(vec2 a, vec2 b, float t) {
-		return mix(a, b, t);
-	}
-
-	vec2 letterE(float t) {
-		if (t < 0.4) return linePoint(vec2(0.0, -0.35), vec2(0.0, 0.35), t / 0.4);
-		if (t < 0.62) return linePoint(vec2(0.0, 0.35), vec2(0.23, 0.35), (t - 0.4) / 0.22);
-		if (t < 0.82) return linePoint(vec2(0.0, 0.0), vec2(0.18, 0.0), (t - 0.62) / 0.20);
-		return linePoint(vec2(0.0, -0.35), vec2(0.23, -0.35), (t - 0.82) / 0.18);
-	}
-
-	vec2 letterM(float t) {
-		if (t < 0.26) return linePoint(vec2(0.0, -0.35), vec2(0.0, 0.35), t / 0.26);
-		if (t < 0.52) return linePoint(vec2(0.0, 0.35), vec2(0.14, -0.05), (t - 0.26) / 0.26);
-		if (t < 0.78) return linePoint(vec2(0.14, -0.05), vec2(0.28, 0.35), (t - 0.52) / 0.26);
-		return linePoint(vec2(0.28, 0.35), vec2(0.28, -0.35), (t - 0.78) / 0.22);
-	}
-
-	vec2 letterI(float t) {
-		if (t < 0.24) return linePoint(vec2(0.0, 0.35), vec2(0.28, 0.35), t / 0.24);
-		if (t < 0.76) return linePoint(vec2(0.14, 0.35), vec2(0.14, -0.35), (t - 0.24) / 0.52);
-		return linePoint(vec2(0.0, -0.35), vec2(0.28, -0.35), (t - 0.76) / 0.24);
-	}
-
-	vec2 letterL(float t) {
-		if (t < 0.66) return linePoint(vec2(0.0, 0.35), vec2(0.0, -0.35), t / 0.66);
-		return linePoint(vec2(0.0, -0.35), vec2(0.26, -0.35), (t - 0.66) / 0.34);
-	}
-
-	vec2 emilePoint(float idNorm) {
-		float idx = floor(idNorm * 5.0);
-		float local = fract(idNorm * 5.0);
-		vec2 glyph;
-
-		if (idx < 0.5) glyph = letterE(local);
-		else if (idx < 1.5) glyph = letterM(local);
-		else if (idx < 2.5) glyph = letterI(local);
-		else if (idx < 3.5) glyph = letterL(local);
-		else glyph = letterE(local);
-
-		float letterWidth = 0.28;
-		float gap = 0.08;
-		float advance = letterWidth + gap;
-		float startX = -0.5 * (5.0 * letterWidth + 4.0 * gap);
-		float offsetX = startX + idx * advance;
-
-		vec2 jitter = hash22(vec2(idNorm * 53.0, idNorm * 97.0)) - 0.5;
-		glyph += vec2(jitter.x * 0.018, jitter.y * 0.018);
-
-		return vec2(offsetX + glyph.x, glyph.y * 0.95);
-	}
-
 	void main() {
 		vec2 noise = vec2(
 			.5+.5*snoise(vec3(vec2(aPosition*uNoiseScale+200.), uTime*uNoiseSpeed)),
 			.5+.5*snoise(vec3(vec2(aPosition*uNoiseScale+100.), uTime*uNoiseSpeed))
 		);
-		float idNorm = fract(float(gl_VertexID) / max(1.0, uMaxAmount));
-		vec2 targetWord = emilePoint(idNorm);
+		float particleId = float(gl_VertexID);
 
 		if (aAge >= aLife) {
-			ivec2 coord = ivec2(gl_VertexID%512, gl_VertexID/512);
-			vec2 rand = hash22(vec2(coord));
-			float posX = snoise(vec3(rand+vec2(uRandom.x), -uTime*.1+noise.x*.1));
-			float posY = snoise(vec3(rand-vec2(uRandom.y),  uTime*.1+noise.y*.1));
-			vec2 abstractSpawn = uSpawnScale*vec2(posX, posY);
-			vPosition = mix(abstractSpawn, targetWord, uFaceMorph);
+			// Spawn depuis les bords — dérive continue pour éviter les couloirs et les vagues
+			ivec2 coord = ivec2(gl_VertexID % 512, gl_VertexID / 512);
+			vec2 rand  = hash22(vec2(coord));
+			vec2 rand2 = hash22(vec2(coord) + vec2(31.7, 57.3));
+			float side = step(0.5, rand.x);
+			float xOff = mix(-1.65, 1.65, side);
+			float driftA = snoise(vec3(particleId * 0.0035, rand.x * 5.0, uTime * 0.14));
+			float driftB = snoise(vec3(particleId * 0.0057 + 19.0, rand.y * 7.0, uTime * 0.09));
+			float yBase = rand2.x * 2.0 - 1.0;
+			float yOff = clamp(yBase * 0.76 + driftA * 0.16 + driftB * 0.08, -1.0, 1.0);
+			vPosition = vec2(xOff, yOff * 0.88);
 			vAge = 0.;
 			vLife = aLife;
-			vVel = mix(vPosition, vec2(0.), uFaceMorph*0.85);
+			float impulse = mix(0.42, 0.24, uFaceMorph);
+			float ySpread = mix(0.12, 0.18, uFaceMorph);
+			vVel = vec2(mix(impulse, -impulse, side), (rand2.y - 0.5) * ySpread + driftB * 0.03);
 		} else {
-			vec2 force = uForceStrength*(2.*noise.rg-1.);
-			vec2 toFace = targetWord-aPosition;
-			vec2 faceForce = toFace*(0.6+8.0*uFaceMorph);
-			float flowKeep = 1.0-uFaceMorph;
-			float damp = mix(uVelocityDamping, 0.88, uFaceMorph);
-			vPosition = aPosition+aVel*uTimeDelta;
-			vAge = aAge+uTimeDelta;
+			vec2 force = uForceStrength * (2.0 * noise.rg - 1.0);
+			vec2 toCenter = -aPosition;
+			float dist = length(toCenter);
+
+			float cloudRadius = mix(0.30, 0.18, uFaceMorph);
+
+			// outsideCloud = 1 hors du nuage, 0 à l'intérieur
+			// insideCloud  = 1 à l'intérieur, 0 à l'extérieur
+			float outsideCloud = smoothstep(0.0, cloudRadius, dist);
+			float insideCloud  = 1.0 - outsideCloud;
+
+			// Hors du nuage : attraction vers le centre
+			float attractStrength = mix(1.0, 4.2, uFaceMorph);
+			vec2 convergenceForce = toCenter * attractStrength * outsideCloud;
+
+			// Amortissement : fort dans le nuage pour tuer le momentum directionnel
+			float dampInside  = mix(0.82, 0.91, uFaceMorph);
+			float dampOutside = 0.968;
+			float damp = mix(dampOutside, dampInside, insideCloud);
+
+			vec2 centerDir = dist > 0.0001 ? toCenter / dist : vec2(0.0);
+			vec2 orthoDir = vec2(-centerDir.y, centerDir.x);
+			float laneNoise = snoise(vec3(particleId * 0.0021 + 13.0, dist * 4.0, uTime * 0.28));
+			vec2 swirlForce = orthoDir * laneNoise * 0.028 * outsideCloud;
+
+			// Bruit de Perlin :
+			//   dans le nuage  → fort, anime la forme organique
+			//   hors du nuage  → légère turbulence pour l'aspect fumée/fluide
+			float flowInside  = mix(0.45, 2.2, uFaceMorph);
+			float flowOutside = mix(0.14, 0.18, uFaceMorph);
+			float flowKeep = mix(flowOutside, flowInside, insideCloud);
+			vec2 noiseForce = force * uTimeDelta * uVelocityGain * flowKeep;
+
+			vPosition = aPosition + aVel * uTimeDelta;
+			vAge = aAge + uTimeDelta;
 			vLife = aLife;
-			vVel = damp*aVel+force*uTimeDelta*uVelocityGain*flowKeep+faceForce*uTimeDelta;
+			vVel = damp * aVel + noiseForce + swirlForce + convergenceForce * uTimeDelta;
 		}
 	}
 `
