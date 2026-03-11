@@ -1,3 +1,4 @@
+/* Réinitialisation : suppression des marges et paddings par défaut du navigateur */
 html,
 body {
 	margin: 0;
@@ -8,19 +9,22 @@ body {
 
 body {
 	position: relative;
-	background: transparent;
-	overflow-x: hidden;
+	background: transparent; /* Le canvas WebGL est en fond, pas le body */
+	overflow-x: hidden;      /* Empêche le scroll horizontal */
 }
 
+/* Canvas WebGL fixé en arrière-plan, couvre toute la fenêtre */
 canvas {
-	position: fixed;
-	inset: 0;
+	position: fixed;     /* Reste visible pendant le scroll */
+	inset: 0;            /* Raccourci pour top/right/bottom/left: 0 */
 	width: 100vw;
 	height: 100vh;
 	box-sizing: border-box;
-	display: block;
+	display: block;      /* Supprime l'espace sous le canvas (inline par défaut) */
 }
 
+/* Zone de scroll : crée l'espace nécessaire pour que l'utilisateur·rice puisse scroller */
+/* La hauteur (400vh = 4 pages) détermine la durée de l'animation scrollytelling */
 .scroll-space {
 	height: 400vh;
 }

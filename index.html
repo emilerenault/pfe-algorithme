@@ -3,12 +3,17 @@
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<!-- Environnement d'exécution OpenProcessing (requis par Olon) -->
 		<script src="https://openprocessing.org/openprocessing_sketch.js"></script>
+		<!-- Feuille de style : canvas fixé, espace de scroll -->
 		<link rel="stylesheet" href="./style.css" />
 		<title>Algorithme et impacts</title>
 	</head>
 	<body>
+		<!-- Zone de scroll vide : crée l'espace pour animer le nuage via le scroll -->
+		<!-- aria-hidden="true" : invisible aux lecteurs d'écran (purement décoratif) -->
 		<div class="scroll-space" aria-hidden="true"></div>
+		<!-- Point d'entrée JavaScript : initialise WebGL et lance la boucle de rendu -->
 		<script type="module" src="./sketch.js"></script>
 	</body>
 </html>
